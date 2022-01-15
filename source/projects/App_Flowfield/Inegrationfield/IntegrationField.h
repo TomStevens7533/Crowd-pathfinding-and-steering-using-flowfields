@@ -103,6 +103,7 @@ void InegrationField<T_NodeType, T_ConnectionType>::CalculateIntegrationField(T_
 			
 		}
 	}
+
 }
 
 template <class T_NodeType, class T_ConnectionType>

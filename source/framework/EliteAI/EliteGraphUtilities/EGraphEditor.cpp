@@ -2,7 +2,7 @@
 #include "EGraphEditor.h"
 
 
-bool Elite::GraphEditor::UpdateGraph(GridGraph<GridTerrainNode, GraphConnection>* pGraph)
+bool Elite::GraphEditor::UpdateGraph(GridGraph<FlowFieldNode, GraphConnection>* pGraph)
 {
 #pragma region UI
 	//Extra Grid Terrain UI

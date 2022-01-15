@@ -10,13 +10,12 @@
 using namespace Elite;
 
 
-int App_Flowfield::m_sColls = 20;
+int App_Flowfield::m_sColls = 30;
 
-int App_Flowfield::m_sRows = 20;
+int App_Flowfield::m_sRows = 30;
 
-int App_Flowfield::m_sAgentAmount = 50;
+int App_Flowfield::m_sAgentAmount = 200;
 
-int App_Flowfield::m_sTeamAmount = 2;
 
 
 
@@ -40,7 +39,7 @@ App_Flowfield::~App_Flowfield()
 //Functions
 void App_Flowfield::Start()
 {
-	std::cout << "Only rendering first team\n";
+	std::cout << "Flowfield rendering depends on team selection check edit menu\n";
 
 	//Set Camera
 	DEBUGRENDERER2D->GetActiveCamera()->SetZoom(39.0f);
@@ -51,14 +50,17 @@ void App_Flowfield::Start()
 	//Create Graph
 	MakeGridGraph();
 
-	for (size_t i = 0; i < m_sTeamAmount; i++)
+	for (size_t i = 0; i < TEAMCOUNT; i++)
 	{
-		m_pIntergrationfieldVec.push_back(new InegrationField<Elite::GridTerrainNode, Elite::GraphConnection>(m_pGridGraph, i));
+		m_pIntergrationfieldVec.push_back(new InegrationField<Elite::FlowFieldNode, Elite::GraphConnection>(m_pGridGraph, i));
 	}
 
 	//Setup default start path
-	m_endPathVec[0] = 108;
-	m_endPathVec[1] = 5;
+
+	for (size_t i = 0; i < (TEAMCOUNT + 1); i++)
+		m_endPathVec[i] = (rand() % (m_sColls * m_sRows)) + 1;
+
+
 
 	CalculatePath();
 
@@ -70,7 +72,7 @@ void App_Flowfield::Start()
 
 	for (int i = 0; i < m_sAgentAmount; i++)
 	{
-		if ((i) % (m_sAgentAmount / m_sTeamAmount) == 0) {
+		if ((i) % (m_sAgentAmount / TEAMCOUNT) == 0) {
 			teamIdx++;
 			teamColor = { randomFloat(0,1), randomFloat(0,1), randomFloat(0,1) };
 		}
@@ -95,16 +97,17 @@ void App_Flowfield::Update(float deltaTime)
 	int teamIdx = -1;
 	for (int i = 0; i < m_sAgentAmount; i++)
 	{
-		if (i == ((m_sAgentAmount / m_sTeamAmount) * (teamIdx + 1))) {
+		if (i == ((m_sAgentAmount / TEAMCOUNT) * (teamIdx + 1))) {
 			teamIdx++;
 		}
 
-		assert(teamIdx <= m_sTeamAmount - 1);
+		teamIdx = Elite::Clamp(teamIdx, 0, TEAMCOUNT - 1);
 		SteeringAgent* pagent = m_AgentVector[i];
 		Elite::Vector2 currentFlowVec = m_pGridGraph->GetNode(PositionToIndex(pagent->GetPosition()))->GetFlowVec(teamIdx);
 		pagent->TrimToWorld({ 0,0 }, { static_cast<float>(m_sColls * m_SizeCell), static_cast<float>(m_sRows * m_SizeCell) });
 		pagent->SetLinearVelocity(currentFlowVec * pagent->GetMaxLinearSpeed());
 		pagent->Update(deltaTime);
+		pagent->SetMaxLinearSpeed(m_ImguiMaxLinearSpeed);
 	}
 	g_lock.unlock();
 
@@ -142,24 +145,17 @@ void App_Flowfield::Render(float deltaTime) const
 		m_bDrawConnectionsCosts
 	);
 
-	for (size_t i = 0; i < m_sTeamAmount; i++)
+	for (size_t i = 0; i < TEAMCOUNT; i++)
 	{
 		Elite::Color bodyColor;
 		//Render end node on top if applicable
 		if (m_endPathVec[i] != invalid_node_index)
 		{
-			bodyColor = m_AgentVector[((m_sAgentAmount / m_sTeamAmount)) * i]->GetBodyColor();
+			bodyColor = m_AgentVector[((m_sAgentAmount / TEAMCOUNT)) * i]->GetBodyColor();
 			m_GraphRenderer.HighlightNodes(m_pGridGraph, { m_pGridGraph->GetNode(m_endPathVec[i]) }, bodyColor);
 		}
 	}
 
-
-
-	//render path below if applicable
-	if (m_vPath.size() > 0)
-	{
-		m_GraphRenderer.HighlightNodes(m_pGridGraph, m_vPath);
-	}
 
 	if (m_bDrawFlowVec) {
 		float arrowLenght = m_SizeCell / 3.f;
@@ -172,21 +168,21 @@ void App_Flowfield::Render(float deltaTime) const
 			if (node->GetTerrainType() != TerrainType::Water) { //only render if not water
 				Elite::Vector2 nodePos = m_pGridGraph->GetNodeWorldPos(node);
 				//DEBUGRENDERER2D->DrawDirection(nodePos, node->GetFlowVec(), 2.f, {1.f, 0.f, 0.f});
-				DEBUGRENDERER2D->DrawDirection(nodePos, node->GetFlowVec(1), arrowLenght, { 0.8f, 0.f, 0.2f });
-				DEBUGRENDERER2D->DrawPoint((nodePos + (node->GetFlowVec(1) * arrowLenght)), 3.f, { 0.8f, 0.f, 0.2f }, 0.f);
+				DEBUGRENDERER2D->DrawDirection(nodePos, node->GetFlowVec(m_ImguiTeamToEditNode), arrowLenght, { 0.8f, 0.f, 0.2f });
+				DEBUGRENDERER2D->DrawPoint((nodePos + (node->GetFlowVec(m_ImguiTeamToEditNode) * arrowLenght)), 3.f, { 0.8f, 0.f, 0.2f }, 0.f);
 				//arrow drawing
-				Elite::Vector2 normalizeFlowVec = node->GetFlowVec(1).GetNormalized();
+				Elite::Vector2 normalizeFlowVec = node->GetFlowVec(m_ImguiTeamToEditNode).GetNormalized();
 
 
 				Elite::Vector2 leftPerpendicularPos = { normalizeFlowVec.y * arrowSidesLenght, -normalizeFlowVec.x * arrowSidesLenght };
 				leftPerpendicularPos = leftPerpendicularPos + ((nodePos + ((node->GetFlowVec(1)) * arrowSidesLenght)));
 
 				Elite::Vector2 RightPerpendicularPos = { -normalizeFlowVec.y * arrowSidesLenght, normalizeFlowVec.x * arrowSidesLenght };
-				RightPerpendicularPos = RightPerpendicularPos + ((nodePos + ((node->GetFlowVec(1)) * arrowSidesLenght)));
+				RightPerpendicularPos = RightPerpendicularPos + ((nodePos + ((node->GetFlowVec(m_ImguiTeamToEditNode)) * arrowSidesLenght)));
 
-				DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec(1) * arrowLenght), leftPerpendicularPos, { 0.0f, 0.f, 1.f });
+				DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec(m_ImguiTeamToEditNode) * arrowLenght), leftPerpendicularPos, { 0.0f, 0.f, 1.f });
 
-				DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec(1) * arrowLenght), RightPerpendicularPos, { 0.0f, 0.f, 1.f });
+				DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec(m_ImguiTeamToEditNode) * arrowLenght), RightPerpendicularPos, { 0.0f, 0.f, 1.f });
 			}
 
 		}
@@ -199,14 +195,7 @@ void App_Flowfield::Render(float deltaTime) const
 
 void App_Flowfield::MakeGridGraph()
 {
-	m_vPath.clear();
-
-
-
-	if (m_pGridGraph != nullptr)
-		delete m_pGridGraph;
-
-	auto m_pTempGrid = new GridGraph<GridTerrainNode, GraphConnection>(m_sColls, m_sRows, m_SizeCell, false, false, 1.f, 1.5f);
+	auto m_pTempGrid = new GridGraph<FlowFieldNode, GraphConnection>(m_sColls, m_sRows, m_SizeCell, false, false, 1.f, 1.5f);
 
 	//Setup default terrain
 	m_pTempGrid->GetNode(86)->SetTerrainType(TerrainType::Water);
@@ -219,8 +208,14 @@ void App_Flowfield::MakeGridGraph()
 	m_pTempGrid->RemoveConnectionsToAdjacentNodes(47);
 	m_pTempGrid->GetNrOfNodes();
 
+	auto tempElementToDelete = m_pGridGraph;
+
 	m_pGridGraph = m_pTempGrid;
 
+	if(tempElementToDelete != nullptr)
+		delete tempElementToDelete;
+
+	
 }
 
 void App_Flowfield::UpdateImGui()
@@ -262,7 +257,7 @@ void App_Flowfield::UpdateImGui()
 
 		ImGui::Text("Middle Mouse");
 		ImGui::Text("for placing end node");
-		ImGui::SliderInt("Team to edit:", reinterpret_cast<int*>(&m_ImguiTeamToEditNode), 0, m_sTeamAmount - 1);
+		ImGui::SliderInt("Team to edit:", reinterpret_cast<int*>(&m_ImguiTeamToEditNode), 0, TEAMCOUNT - 1);
 		ImGui::Spacing();
 
 		ImGui::Text("controls");
@@ -278,32 +273,20 @@ void App_Flowfield::UpdateImGui()
 
 		ImGui::Unindent();
 
+		if (ImGui::Button("Randomize End nodes")) {
+			g_lock.lock();
+
+			for (size_t i = 0; i < TEAMCOUNT; i++)
+				m_endPathVec[i] = (rand() %  (m_sColls * m_sRows ) ) + 1;
+			g_lock.unlock();
+			CalculatePath();
+
+		}
 		
 		ImGui::Spacing();
 		ImGui::Text("COLLUM: ");
 		ImGui::Indent();
-		if (ImGui::SliderInt("COlls:", &m_sColls, 10, 1000)) {
-			g_lock.lock();
-			MakeGridGraph();
-
-			for (auto inegrationFieldElement : m_pIntergrationfieldVec) {
-				inegrationFieldElement->UpdateGraph(m_pGridGraph);
-			}
-			CalculatePath();
-			g_lock.unlock();
-
-		}
-		if (ImGui::SliderInt("ROWS:", &m_sRows, 10, 1000)) {
-			g_lock.lock();
-			MakeGridGraph();
-			for (auto inegrationFieldElement : m_pIntergrationfieldVec) {
-				inegrationFieldElement->UpdateGraph(m_pGridGraph);
-			}
-			CalculatePath();
-			g_lock.unlock();
-
-
-		}
+		
 		if (ImGui::SliderInt("CellSize:", reinterpret_cast<int*>(&m_SizeCell), 5, 50)) {
 			g_lock.lock();
 			MakeGridGraph();
@@ -314,18 +297,21 @@ void App_Flowfield::UpdateImGui()
 			g_lock.unlock();
 
 		}
+
 		std::string ButtonText =  "Add " + std::to_string(10) + " Agents";
 		if (ImGui::Button(ButtonText.c_str())) {
 			g_lock.lock();
 			AddAgent(10);
 			g_lock.unlock();
 		}
+
+		ImGui::SliderFloat("agens Linear speed", reinterpret_cast<float*>(&m_ImguiMaxLinearSpeed), 0.f, 15.f);
+
 		ImGui::Unindent();
 		//End
 		ImGui::PopAllowKeyboardFocus();
 		ImGui::End();
 	}
-
 
 	if (m_GraphEditor.UpdateGraph(m_pGridGraph))
 	{
@@ -340,8 +326,7 @@ int App_Flowfield::PositionToIndex(const Elite::Vector2 pos)
 	int x = (pos.x / ((m_sColls * m_SizeCell) / m_sColls));
 	int y = int(pos.y / ((m_sRows * m_SizeCell) / m_sRows)) * m_sRows;
 
-	if (x + y <= (m_pGridGraph->GetNrOfActiveNodes() - 1)) return x + y;
-	return 0;
+	return Elite::Clamp(x + y, 0, (m_pGridGraph->GetNrOfActiveNodes() - 1));
 }
 
 void App_Flowfield::AddAgent(int amount)
@@ -354,7 +339,7 @@ void App_Flowfield::AddAgent(int amount)
 
 	for (int i = 0; i < m_sAgentAmount; i++)
 	{
-		if ((i) % (m_sAgentAmount / m_sTeamAmount) == 0) {
+		if ((i) % (m_sAgentAmount / TEAMCOUNT) == 0) {
 			teamIdx++;
 			teamColor = { randomFloat(0,1), randomFloat(0,1), randomFloat(0,1) };
 		}
@@ -388,7 +373,7 @@ void App_Flowfield::CalculatePath()
 		}
 
 		
-		Elite::GridTerrainNode* endNode = m_pGridGraph->GetNode(m_endPathVec[i]);
+		Elite::FlowFieldNode* endNode = m_pGridGraph->GetNode(m_endPathVec[i]);
 		m_pIntergrationfieldVec[i]->CalculateIntegrationField(endNode);
 		const int integrationFieldID = m_pIntergrationfieldVec[i]->GetID();
 
@@ -398,10 +383,10 @@ void App_Flowfield::CalculatePath()
 			auto nodeConnections = m_pGridGraph->GetNodeConnections(node);
 
 			float currentCost = FLT_MAX;
-			Elite::GridTerrainNode* smalllestCostNeighbour = nullptr;
+			Elite::FlowFieldNode* smalllestCostNeighbour = nullptr;
 
 			for (auto connnection : m_pGridGraph->GetNodeConnections(node->GetIndex())) {
-				Elite::GridTerrainNode* lookupNode;
+				Elite::FlowFieldNode* lookupNode;
 				lookupNode = m_pGridGraph->GetNode(connnection->GetTo());
 
 				if (lookupNode->GetBestCost(integrationFieldID) < currentCost) {
@@ -411,12 +396,15 @@ void App_Flowfield::CalculatePath()
 			}
 			if (smalllestCostNeighbour != nullptr) {
 				//Calculate Index node
-				int xGridDifferenceBaseNode = node->GetIndex() % (m_sColls);
-				int yGridDiffereceBaseNode = node->GetIndex() / (m_sColls);
+				Elite::Vector2 nodeWorldPos = m_pGridGraph->GetNodeWorldPos(node->GetIndex());
+				int xGridDifferenceBaseNode = Elite::Clamp(static_cast<int>(nodeWorldPos.x / m_SizeCell), 0, m_sColls);
+				int yGridDiffereceBaseNode = Elite::Clamp(static_cast<int>(nodeWorldPos.y / m_SizeCell), 0, m_sRows);
 
 				//Calculate Index neighbour
-				int xGridDifferenceNeighbourNode = smalllestCostNeighbour->GetIndex() % (m_sColls);
-				int yGridDiffereceNeighbourNodee = smalllestCostNeighbour->GetIndex() / (m_sColls);
+				Elite::Vector2 neighboureWorldPos = m_pGridGraph->GetNodeWorldPos(smalllestCostNeighbour->GetIndex());
+				int xGridDifferenceNeighbourNode = Elite::Clamp(static_cast<int>(neighboureWorldPos.x / m_SizeCell), 0, m_sColls);
+				int yGridDiffereceNeighbourNodee = Elite::Clamp(static_cast<int>(neighboureWorldPos.y / m_SizeCell), 0, m_sRows);
+
 
 				Elite::Vector2 flowFieldVec = { static_cast<float>(xGridDifferenceNeighbourNode - xGridDifferenceBaseNode)
 					,static_cast<float>(yGridDiffereceNeighbourNodee - yGridDiffereceBaseNode) };
@@ -450,7 +438,10 @@ void App_Flowfield::RenderUI(bool updateDone)
 		//Find closest node to click pos
 		int closestNode = m_pGridGraph->GetNodeIdxAtWorldPos(mousePos);
 
-		m_endPathVec[m_ImguiTeamToEditNode] = closestNode;
-		CalculatePath();
+		if (closestNode != invalid_node_index) {
+			m_endPathVec[m_ImguiTeamToEditNode] = closestNode;
+			CalculatePath();
+		}
+
 	}
 }

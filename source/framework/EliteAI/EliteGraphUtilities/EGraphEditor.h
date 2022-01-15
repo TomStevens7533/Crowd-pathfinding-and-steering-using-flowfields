@@ -16,7 +16,7 @@ namespace Elite
 		template <class T_NodeType, class T_ConnectionType>
 		bool UpdateGraph(Graph2D<T_NodeType, T_ConnectionType>* pGraph);
 
-		bool UpdateGraph(GridGraph<GridTerrainNode, GraphConnection>* pGraph);
+		bool UpdateGraph(GridGraph<FlowFieldNode, GraphConnection>* pGraph);
 
 		template <class T_NodeType, class T_ConnectionType>
 		bool UpdateGraph(GridGraph<T_NodeType, T_ConnectionType>* pGraph);

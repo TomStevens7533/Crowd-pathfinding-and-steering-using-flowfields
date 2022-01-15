@@ -203,7 +203,7 @@ namespace Elite
 	}
 
 	template<>
-	inline float GridGraph<GridTerrainNode, GraphConnection>::CalculateConnectionCost(int fromIdx, int toIdx) const
+	inline float GridGraph<FlowFieldNode, GraphConnection>::CalculateConnectionCost(int fromIdx, int toIdx) const
 	{
 		float cost = m_DefaultCostStraight;
 

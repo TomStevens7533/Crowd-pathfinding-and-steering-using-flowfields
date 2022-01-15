@@ -9,6 +9,7 @@
 
 #include "EGraphEnums.h"
 #include "framework/EliteAI/EliteGraphUtilities/EGraphVisuals.h"
+#include "../../../projects/App_Flowfield/Define.h"
 
 namespace Elite
 {
@@ -50,14 +51,14 @@ namespace Elite
 	};
 
 
-	class GridTerrainNode : public GraphNode
+	class FlowFieldNode : public GraphNode
 	{
 	public:
-		GridTerrainNode(int index)
+		FlowFieldNode(int index)
 			: GraphNode(index), m_Terrain(TerrainType::Ground)
 		{
 		}
-		virtual ~GridTerrainNode() = default;
+		virtual ~FlowFieldNode() = default;
 
 
 		TerrainType GetTerrainType() const { return m_Terrain; }
@@ -85,8 +86,8 @@ namespace Elite
 
 	protected:
 		TerrainType m_Terrain;
-		Elite::Vector2 m_FlowVec[2];
-		float m_BestCost[2];
+		Elite::Vector2 m_FlowVec[TEAMCOUNT];
+		float m_BestCost[TEAMCOUNT];
 	};
 
 

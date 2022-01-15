@@ -10,6 +10,7 @@
 #include "Inegrationfield/IntegrationField.h"
 #include "../Movement/SteeringBehaviors/SteeringAgent.h"
 #include <mutex>
+#include "Define.h"
 
 
 
@@ -43,17 +44,15 @@ private:
 	static int m_sColls;
 	static int m_sRows;
 	static int m_sAgentAmount;
-	static int m_sTeamAmount;
-	unsigned int m_SizeCell = 15;
+	unsigned int m_SizeCell = 5;
 
 	//Grid contains costs
-	Elite::GridGraph<Elite::GridTerrainNode, Elite::GraphConnection>* m_pGridGraph = nullptr;
+	Elite::GridGraph<Elite::FlowFieldNode, Elite::GraphConnection>* m_pGridGraph = nullptr;
 
-	std::vector<InegrationField<Elite::GridTerrainNode, Elite::GraphConnection>*> m_pIntergrationfieldVec;
+	std::vector<InegrationField<Elite::FlowFieldNode, Elite::GraphConnection>*> m_pIntergrationfieldVec;
 
 	//Pathfinding datamembers
-	int m_endPathVec[2]{ invalid_node_index };
-	std::vector<Elite::GridTerrainNode*> m_vPath;
+	int m_endPathVec[TEAMCOUNT]{ invalid_node_index };
 
 	//Editor and Visualisation
 	Elite::GraphEditor m_GraphEditor;
@@ -70,6 +69,7 @@ private:
 	int m_SelectedHeuristic = 4;
 	int m_SelectedAlgoritm = 0;
 	int m_ImguiTeamToEditNode = 0;
+	int m_ImguiMaxLinearSpeed = 5.f;
 
 	//mutex to lock agentVector if changes is happening;
 	std::mutex g_lock;

@@ -104,6 +104,7 @@
     <ClInclude Include="framework\EliteAI\EliteNavigation\Algorithms\ENavGraphPathfinding.h" />
     <ClInclude Include="framework\EliteAI\EliteNavigation\Algorithms\EPathSmoothing.h" />
     <ClInclude Include="projects\App_Flowfield\Inegrationfield\IntegrationField.h" />
+    <ClInclude Include="projects\App_Flowfield\Define.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />

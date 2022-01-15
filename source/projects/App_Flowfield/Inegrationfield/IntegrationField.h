@@ -1,11 +1,16 @@
 #pragma once
-
+#include "framework/EliteAI/EliteGraphs/EIGraph.h"
+#include "framework/EliteAI/EliteGraphs/EGraphNodeTypes.h"
+#include <memory>
+#include <vector>
+#include <numeric>
+#include <algorithm>
 
 template <class T_NodeType, class T_ConnectionType>
 class InegrationField
 {
 public:
-	InegrationField(IGraph<T_NodeType, T_ConnectionType>* pGraph);
+	InegrationField(Elite::IGraph<T_NodeType, T_ConnectionType>* pGraph);
 
 	// stores the optimal connection to a node and its total costs related to the start and end node of the path
 	struct NodeRecord
@@ -29,14 +34,69 @@ public:
 		};
 	};
 
-	void CalculateIntegrationField(int targetX, int targetY);
-
-
+	void CalculateIntegrationField(T_NodeType* goalNode);
 
 private:
-	std::vector<NodeRecord> m_OpenList;
-	std::vector<NodeRecord> m_ClosedList;
+	void ResetField();
 
-	IGraph<T_NodeType, T_ConnectionType>* m_pGraph;
+private:
+	std::vector<T_NodeType*> m_OpenList;
+	std::vector<T_NodeType*> m_ClosedList;
+
+	std::shared_ptr<Elite::IGraph<T_NodeType, T_ConnectionType>> m_pGraph;
 
 };
+
+template <class T_NodeType, class T_ConnectionType>
+void InegrationField<T_NodeType, T_ConnectionType>::ResetField()
+{
+	for (auto node : m_pGraph->GetAllActiveNodes())
+	{
+		//Set cost to max cost equal to water node
+		node->SetBestCost(static_cast<int>(TerrainType::Water));
+	}
+}
+
+template <class T_NodeType, class T_ConnectionType>
+void InegrationField<T_NodeType, T_ConnectionType>::CalculateIntegrationField(T_NodeType* goalNode)
+{
+	//Reset graphCopy to max cost;
+	ResetField();
+	//Set goal node cost to 0 and add it to the open list
+	goalNode->SetBestCost(0);
+	m_OpenList.push_back(goalNode);
+
+	//Algorithm continues until open list is empty
+	while (m_OpenList.size() > 0)
+	{
+		//Get the next node in the open list
+		T_NodeType* currentLookUpNode = m_OpenList.front();
+		m_OpenList.erase(m_OpenList.begin(), m_OpenList.begin() + 1);
+		
+		for (auto connnection : m_pGraph->GetNodeConnections(currentLookUpNode->GetIndex()))
+		{
+			//Get the neighbour Node
+			T_NodeType* neighbourNode = m_pGraph->GetNode(connnection->GetTo());
+			//Calculate new Node Cost based upon the curent node and the connection cost of going to the nextnode;
+			int CalculatedCost = static_cast<int>(m_pGraph->GetNode(connnection->GetTo())->GetTerrainType()); //GetCostOfTerrainType
+			CalculatedCost += (m_pGraph->GetConnection(connnection->GetFrom(), connnection->GetTo())->GetCost() * currentLookUpNode->GetBestCost());
+
+			//if shorter cost has been found add to the open list
+			if (CalculatedCost < neighbourNode->GetBestCost()) {
+				//Set new cost value to neighbour nodes
+				neighbourNode->SetBestCost(CalculatedCost);
+				//add node to openlist
+				auto openListIt = std::find(m_OpenList.begin(), m_OpenList.end(), neighbourNode);
+				if (openListIt == m_OpenList.end()) {
+					m_OpenList.push_back(neighbourNode);
+				}
+			}
+		}
+	}
+}
+
+template <class T_NodeType, class T_ConnectionType>
+InegrationField<T_NodeType, T_ConnectionType>::InegrationField(Elite::IGraph<T_NodeType, T_ConnectionType>* pGraph)
+{
+	m_pGraph.reset(pGraph);
+}

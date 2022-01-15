@@ -6,8 +6,8 @@
 #include "framework/EliteInterfaces/EIApp.h"
 #include "framework\EliteAI\EliteGraphUtilities\EGraphEditor.h"
 #include "framework\EliteAI\EliteGraphUtilities\EGraphRenderer.h"
-#include "framework/EliteAI/EliteGraphs/EGraphNodeTypes.h"
 #include "framework/EliteAI/EliteGraphs/EliteGraphAlgorithms/IAlgorithm.h"
+#include "Inegrationfield/IntegrationField.h"
 
 
 
@@ -41,7 +41,7 @@ private:
 
 	//Grid contains costs
 	Elite::GridGraph<Elite::GridTerrainNode, Elite::GraphConnection>* m_pGridGraph = nullptr;
-
+	InegrationField<Elite::GridTerrainNode, Elite::GraphConnection>* m_pIntergrationfield = nullptr;
 
 	//Pathfinding datamembers
 	int startPathIdx = invalid_node_index;
@@ -65,7 +65,7 @@ private:
 
 	//PathFinding
 	Elite::Heuristic m_pHeuristicFunction = Elite::HeuristicFunctions::Chebyshev;
-	Elite::IAlgo<Elite::GridTerrainNode, Elite::GraphConnection>* m_pCurrentAlgo = nullptr;
+	//Elite::IAlgo<Elite::GridTerrainNode, Elite::GraphConnection>* m_pCurrentAlgo = nullptr;
 
 	//Functions
 	void MakeGridGraph();

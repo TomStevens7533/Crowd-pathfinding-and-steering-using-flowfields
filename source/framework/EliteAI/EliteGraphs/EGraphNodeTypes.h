@@ -77,10 +77,12 @@ namespace Elite
 				break;
 			}
 		}
-		
+		inline void SetBestCost(float cost) { m_BestCost = cost; }
+		inline float GetBestCost() { return m_BestCost; }
 
 	protected:
 		TerrainType m_Terrain;
+		float m_BestCost;
 	};
 
 

@@ -157,6 +157,21 @@ void App_Flowfield::Render(float deltaTime) const
 		m_GraphRenderer.HighlightNodes(m_pGridGraph, m_vPath);
 	}
 
+	for (auto node : m_pGridGraph->GetAllActiveNodes())
+	{
+		Elite::Vector2 nodePos = m_pGridGraph->GetNodeWorldPos(node);
+		//DEBUGRENDERER2D->DrawDirection(nodePos, node->GetFlowVec(), 2.f, {1.f, 0.f, 0.f});
+		DEBUGRENDERER2D->DrawDirection(nodePos, node->GetFlowVec(), 5.f, { 0.8f, 0.f, 0.2f });
+		DEBUGRENDERER2D->DrawPoint((nodePos + (node->GetFlowVec() * 5.f)), 3.f, { 0.8f, 0.f, 0.2f } , 0.f);
+		//arrow drawing
+		Elite::Vector2 normalizeFlowVec = node->GetFlowVec().GetNormalized();
+
+		Elite::Vector2 leftPerpendicularPos = { normalizeFlowVec.x - static_cast<float>(std::cos(M_PI / 2)),  static_cast<float>(normalizeFlowVec.y - std::sin(M_PI / 2)) };
+		DEBUGRENDERER2D->DrawPoint((nodePos + (leftPerpendicularPos * 5.f)), 3.f, { 0.f, 1.f, 0.2f }, 0.f);
+
+
+	}
+
 }
 
 
@@ -336,6 +351,42 @@ void App_Flowfield::CalculatePath()
 		//m_vPath = m_pCurrentAlgo->FindPath(startNode, endNode);
 
 		m_pIntergrationfield->CalculateIntegrationField(endNode);
+
+		//Calculate vector field
+		for (auto node : m_pGridGraph->GetAllActiveNodes()) {
+
+			auto nodeConnections = m_pGridGraph->GetNodeConnections(node);
+
+			float currentCost = FLT_MAX;
+			Elite::GridTerrainNode* smalllestCostNeighbour = nullptr;
+
+			for (auto connnection : m_pGridGraph->GetNodeConnections(node->GetIndex())) {
+				Elite::GridTerrainNode* lookupNode;
+				lookupNode = m_pGridGraph->GetNode(connnection->GetTo());
+
+				if (lookupNode->GetBestCost() < currentCost) {
+					smalllestCostNeighbour = lookupNode;
+					currentCost = lookupNode->GetBestCost();
+				}
+			}
+			if (smalllestCostNeighbour != nullptr) {
+				//Calculate Index node
+				int xGridDifferenceBaseNode = node->GetIndex() % (COLUMNS);
+				int yGridDiffereceBaseNode = node->GetIndex() / (COLUMNS);
+
+				//Calculate Index neighbour
+				int xGridDifferenceNeighbourNode = smalllestCostNeighbour->GetIndex() % (COLUMNS);
+				int yGridDiffereceNeighbourNodee = smalllestCostNeighbour->GetIndex() / (COLUMNS);
+
+				Elite::Vector2 flowFieldVec = { static_cast<float>(xGridDifferenceNeighbourNode - xGridDifferenceBaseNode)
+					,static_cast<float>(yGridDiffereceNeighbourNodee - yGridDiffereceBaseNode) };
+
+				node->SetFlowVec(flowFieldVec.GetNormalized());
+			}
+		
+		}
+
+
 
 		std::cout << "New Path Calculated node count: " << m_vPath.size() <<  std::endl;
 	}

@@ -80,8 +80,12 @@ namespace Elite
 		inline void SetBestCost(float cost) { m_BestCost = cost; }
 		inline float GetBestCost() { return m_BestCost; }
 
+		inline void SetFlowVec(Elite::Vector2 vec) { m_FlowVec = vec; }
+		inline const Elite::Vector2 GetFlowVec() const { return m_FlowVec; }
+
 	protected:
 		TerrainType m_Terrain;
+		Elite::Vector2 m_FlowVec;
 		float m_BestCost;
 	};
 

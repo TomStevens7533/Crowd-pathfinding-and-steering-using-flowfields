@@ -84,7 +84,7 @@ void InegrationField<T_NodeType, T_ConnectionType>::CalculateIntegrationField(T_
 			//if shorter cost has been found add to the open list
 			if (CalculatedCost < neighbourNode->GetBestCost()) {
 				//Set new cost value to neighbour nodes
-				neighbourNode->SetBestCost(CalculatedCost);
+				neighbourNode->SetBestCost(static_cast<float>(CalculatedCost));
 				//add node to openlist
 				auto openListIt = std::find(m_OpenList.begin(), m_OpenList.end(), neighbourNode);
 				if (openListIt == m_OpenList.end()) {

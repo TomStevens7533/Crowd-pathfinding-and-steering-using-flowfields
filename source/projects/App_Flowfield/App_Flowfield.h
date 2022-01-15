@@ -9,6 +9,7 @@
 #include "framework/EliteAI/EliteGraphs/EliteGraphAlgorithms/IAlgorithm.h"
 #include "Inegrationfield/IntegrationField.h"
 #include "../Movement/SteeringBehaviors/SteeringAgent.h"
+#include <mutex>
 
 
 
@@ -29,6 +30,8 @@ public:
 	void RenderUI(bool updateDone) override;
 private:
 	int PositionToIndex(const Elite::Vector2 pos);
+	void AddAgent(int amount);
+
 
 private:
 	//Datamembers
@@ -37,8 +40,9 @@ private:
 	Elite::Vector2 m_TargetPosition = Elite::ZeroVector2;
 
 	//Grid datamembers
-	static int COLUMNS;
-	static int ROWS;
+	static int m_sColls;
+	static int m_sRows;
+	static int m_sAgentAmount;
 	unsigned int m_SizeCell = 15;
 
 	//Grid contains costs
@@ -63,7 +67,10 @@ private:
 	bool m_CalcPathNeeded = false;
 	int m_SelectedHeuristic = 4;
 	int m_SelectedAlgoritm = 0;
+	int m_ImguiAgentToAdd = 0;
 
+	//mutex to lock agentVector if changes is happening;
+	std::mutex g_lock;
 
 	//PathFinding agents
 	std::vector<SteeringAgent*> m_AgentVector;

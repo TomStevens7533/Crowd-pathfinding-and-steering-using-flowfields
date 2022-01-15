@@ -43,14 +43,16 @@ private:
 	static int m_sColls;
 	static int m_sRows;
 	static int m_sAgentAmount;
+	static int m_sTeamAmount;
 	unsigned int m_SizeCell = 15;
 
 	//Grid contains costs
 	Elite::GridGraph<Elite::GridTerrainNode, Elite::GraphConnection>* m_pGridGraph = nullptr;
-	InegrationField<Elite::GridTerrainNode, Elite::GraphConnection>* m_pIntergrationfield = nullptr;
+
+	std::vector<InegrationField<Elite::GridTerrainNode, Elite::GraphConnection>*> m_pIntergrationfieldVec;
 
 	//Pathfinding datamembers
-	int endPathIdx = invalid_node_index;
+	int m_endPathVec[2]{ invalid_node_index };
 	std::vector<Elite::GridTerrainNode*> m_vPath;
 
 	//Editor and Visualisation
@@ -67,7 +69,7 @@ private:
 	bool m_CalcPathNeeded = false;
 	int m_SelectedHeuristic = 4;
 	int m_SelectedAlgoritm = 0;
-	int m_ImguiAgentToAdd = 0;
+	int m_ImguiTeamToEditNode = 0;
 
 	//mutex to lock agentVector if changes is happening;
 	std::mutex g_lock;

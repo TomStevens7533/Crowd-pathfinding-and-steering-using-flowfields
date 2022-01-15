@@ -10,7 +10,7 @@ template <class T_NodeType, class T_ConnectionType>
 class InegrationField
 {
 public:
-	InegrationField(Elite::IGraph<T_NodeType, T_ConnectionType>* pGraph);
+	InegrationField(Elite::IGraph<T_NodeType, T_ConnectionType>* pGraph, int id);
 
 	// stores the optimal connection to a node and its total costs related to the start and end node of the path
 	struct NodeRecord
@@ -36,6 +36,7 @@ public:
 
 	void CalculateIntegrationField(T_NodeType* goalNode);
 	void UpdateGraph(Elite::IGraph<T_NodeType, T_ConnectionType>* newGraph);
+	const int inline GetID() { return m_IntergrationFieldID;}
 
 private:
 	void ResetField();
@@ -43,8 +44,9 @@ private:
 private:
 	std::vector<T_NodeType*> m_OpenList;
 	std::vector<T_NodeType*> m_ClosedList;
-
 	Elite::IGraph<T_NodeType, T_ConnectionType>* m_pGraph;
+
+	int m_IntergrationFieldID = 0;
 
 };
 
@@ -60,7 +62,7 @@ void InegrationField<T_NodeType, T_ConnectionType>::ResetField()
 	for (auto node : m_pGraph->GetAllActiveNodes())
 	{
 		//Set cost to max cost equal to water node
-		node->SetBestCost(static_cast<int>(TerrainType::Water));
+		node->SetBestCost(static_cast<int>(TerrainType::Water), m_IntergrationFieldID);
 	}
 }
 
@@ -70,7 +72,7 @@ void InegrationField<T_NodeType, T_ConnectionType>::CalculateIntegrationField(T_
 	//Reset graphCopy to max cost;
 	ResetField();
 	//Set goal node cost to 0 and add it to the open list
-	goalNode->SetBestCost(0);
+	goalNode->SetBestCost(0, m_IntergrationFieldID);
 	m_OpenList.push_back(goalNode);
 
 	//Algorithm continues until open list is empty
@@ -86,24 +88,25 @@ void InegrationField<T_NodeType, T_ConnectionType>::CalculateIntegrationField(T_
 			T_NodeType* neighbourNode = m_pGraph->GetNode(connnection->GetTo());
 			//Calculate new Node Cost based upon the curent node and the connection cost of going to the nextnode;
 			int CalculatedCost = static_cast<int>(m_pGraph->GetNode(connnection->GetTo())->GetTerrainType()); //GetCostOfTerrainType
-			CalculatedCost += (m_pGraph->GetConnection(connnection->GetFrom(), connnection->GetTo())->GetCost() * currentLookUpNode->GetBestCost());
+			CalculatedCost += (m_pGraph->GetConnection(connnection->GetFrom(), connnection->GetTo())->GetCost() * currentLookUpNode->GetBestCost(m_IntergrationFieldID));
 
 			//if shorter cost has been found add to the open list
-			if (CalculatedCost < neighbourNode->GetBestCost()) {
+			if (CalculatedCost < neighbourNode->GetBestCost(m_IntergrationFieldID)) {
 				//Set new cost value to neighbour nodes
-				neighbourNode->SetBestCost(static_cast<float>(CalculatedCost));
+				neighbourNode->SetBestCost(static_cast<float>(CalculatedCost), m_IntergrationFieldID);
 				//add node to openlist
 				auto openListIt = std::find(m_OpenList.begin(), m_OpenList.end(), neighbourNode);
 				if (openListIt == m_OpenList.end()) {
 					m_OpenList.push_back(neighbourNode);
 				}
 			}
+			
 		}
 	}
 }
 
 template <class T_NodeType, class T_ConnectionType>
-InegrationField<T_NodeType, T_ConnectionType>::InegrationField(Elite::IGraph<T_NodeType, T_ConnectionType>* pGraph)
+InegrationField<T_NodeType, T_ConnectionType>::InegrationField(Elite::IGraph<T_NodeType, T_ConnectionType>* pGraph, int id) : m_IntergrationFieldID{id}
 {
 	m_pGraph = pGraph;
 }

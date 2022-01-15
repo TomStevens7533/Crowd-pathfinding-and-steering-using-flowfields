@@ -77,16 +77,16 @@ namespace Elite
 				break;
 			}
 		}
-		inline void SetBestCost(float cost) { m_BestCost = cost; }
-		inline float GetBestCost() { return m_BestCost; }
+		inline void SetBestCost(float cost, int teamIdx) { m_BestCost[teamIdx] = cost; }
+		inline float GetBestCost(int teamIdx) { return m_BestCost[teamIdx]; }
 
-		inline void SetFlowVec(Elite::Vector2 vec) { m_FlowVec = vec; }
-		inline const Elite::Vector2 GetFlowVec() const { return m_FlowVec; }
+		inline void SetFlowVec(Elite::Vector2 vec, int teamIdx) { m_FlowVec[teamIdx] = vec; }
+		inline const Elite::Vector2 GetFlowVec(int teamIdx) const { return m_FlowVec[teamIdx]; }
 
 	protected:
 		TerrainType m_Terrain;
-		Elite::Vector2 m_FlowVec;
-		float m_BestCost;
+		Elite::Vector2 m_FlowVec[2];
+		float m_BestCost[2];
 	};
 
 

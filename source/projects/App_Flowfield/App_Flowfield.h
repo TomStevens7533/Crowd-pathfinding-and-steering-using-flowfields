@@ -8,6 +8,7 @@
 #include "framework\EliteAI\EliteGraphUtilities\EGraphRenderer.h"
 #include "framework/EliteAI/EliteGraphs/EliteGraphAlgorithms/IAlgorithm.h"
 #include "Inegrationfield/IntegrationField.h"
+#include "../Movement/SteeringBehaviors/SteeringAgent.h"
 
 
 
@@ -26,7 +27,8 @@ public:
 	void Update(float deltaTime) override;
 	void Render(float deltaTime) const override;
 	void RenderUI(bool updateDone) override;
-
+private:
+	int PositionToIndex(const Elite::Vector2 pos);
 
 private:
 	//Datamembers
@@ -44,7 +46,6 @@ private:
 	InegrationField<Elite::GridTerrainNode, Elite::GraphConnection>* m_pIntergrationfield = nullptr;
 
 	//Pathfinding datamembers
-	int startPathIdx = invalid_node_index;
 	int endPathIdx = invalid_node_index;
 	std::vector<Elite::GridTerrainNode*> m_vPath;
 
@@ -54,6 +55,7 @@ private:
 
 	//Debug rendering information
 	bool m_bDrawGrid = true;
+	bool m_bDrawFlowVec = true;
 	bool m_bDrawNodeNumbers = false;
 	bool m_bDrawConnections = false;
 	bool m_bDrawConnectionsCosts = false;
@@ -63,9 +65,8 @@ private:
 	int m_SelectedAlgoritm = 0;
 
 
-	//PathFinding
-	Elite::Heuristic m_pHeuristicFunction = Elite::HeuristicFunctions::Chebyshev;
-	//Elite::IAlgo<Elite::GridTerrainNode, Elite::GraphConnection>* m_pCurrentAlgo = nullptr;
+	//PathFinding agents
+	std::vector<SteeringAgent*> m_AgentVector;
 
 	//Functions
 	void MakeGridGraph();

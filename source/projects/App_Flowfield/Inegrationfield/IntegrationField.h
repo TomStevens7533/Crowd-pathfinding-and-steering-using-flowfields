@@ -35,6 +35,7 @@ public:
 	};
 
 	void CalculateIntegrationField(T_NodeType* goalNode);
+	void UpdateGraph(Elite::IGraph<T_NodeType, T_ConnectionType>* newGraph);
 
 private:
 	void ResetField();
@@ -43,9 +44,15 @@ private:
 	std::vector<T_NodeType*> m_OpenList;
 	std::vector<T_NodeType*> m_ClosedList;
 
-	std::shared_ptr<Elite::IGraph<T_NodeType, T_ConnectionType>> m_pGraph;
+	Elite::IGraph<T_NodeType, T_ConnectionType>* m_pGraph;
 
 };
+
+template <class T_NodeType, class T_ConnectionType>
+void InegrationField<T_NodeType, T_ConnectionType>::UpdateGraph(Elite::IGraph<T_NodeType, T_ConnectionType>* newGraph)
+{
+	m_pGraph = newGraph;
+}
 
 template <class T_NodeType, class T_ConnectionType>
 void InegrationField<T_NodeType, T_ConnectionType>::ResetField()
@@ -98,5 +105,5 @@ void InegrationField<T_NodeType, T_ConnectionType>::CalculateIntegrationField(T_
 template <class T_NodeType, class T_ConnectionType>
 InegrationField<T_NodeType, T_ConnectionType>::InegrationField(Elite::IGraph<T_NodeType, T_ConnectionType>* pGraph)
 {
-	m_pGraph.reset(pGraph);
+	m_pGraph = pGraph;
 }

@@ -9,15 +9,23 @@
 
 using namespace Elite;
 
+
 int App_Flowfield::COLUMNS = 20;
 
 int App_Flowfield::ROWS = 20;
+#define TEAMSIZE 100
 
 //Destructor
 App_Flowfield::~App_Flowfield()
 {
-	SAFE_DELETE(m_pGridGraph);
 	SAFE_DELETE(m_pIntergrationfield);
+	SAFE_DELETE(m_pGridGraph);
+
+	for (auto pAgent : m_AgentVector)
+	{
+		SAFE_DELETE(pAgent);
+	}
+	m_AgentVector.clear();
 }
 
 //Functions
@@ -37,36 +45,37 @@ void App_Flowfield::Start()
 
 
 	//Setup default start path
-	startPathIdx = 44;
 	endPathIdx = 108;
 	CalculatePath();
+
+	//Init agents
+	//init flock
+	m_AgentVector.resize(TEAMSIZE);
+	for (int i = 0; i < TEAMSIZE; i++)
+	{
+		SteeringAgent* pagent = new SteeringAgent();
+		pagent->SetPosition({ Elite::randomFloat((COLUMNS * m_SizeCell)), Elite::randomFloat((ROWS * m_SizeCell)) });
+		pagent->SetAutoOrient(true);
+		m_AgentVector[i] = pagent;
+
+
+	}
 
 }
 
 void App_Flowfield::Update(float deltaTime)
 {
+	//Get linear from flowfield
+	for (int i = 0; i < TEAMSIZE; i++)
+	{
+		SteeringAgent* pagent = m_AgentVector[i];
+		Elite::Vector2 currentFlowVec = m_pGridGraph->GetNode(PositionToIndex(pagent->GetPosition()))->GetFlowVec();
+		pagent->TrimToWorld({ 0,0 }, { static_cast<float>(COLUMNS * m_SizeCell), static_cast<float>(ROWS * m_SizeCell) });
+		pagent->SetLinearVelocity(currentFlowVec * pagent->GetMaxLinearSpeed());
+	}
+
 	UNREFERENCED_PARAMETER(deltaTime);
 
-	//INPUT
-	bool const middleMousePressed = INPUTMANAGER->IsMouseButtonUp(InputMouseButton::eMiddle);
-	if (middleMousePressed)
-	{
-		MouseData mouseData = { INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eMiddle) };
-		Elite::Vector2 mousePos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld({ (float)mouseData.X, (float)mouseData.Y });
-
-		//Find closest node to click pos
-		int closestNode = m_pGridGraph->GetNodeIdxAtWorldPos(mousePos);
-		if (m_StartSelected)
-		{
-			startPathIdx = closestNode;
-			CalculatePath();
-		}
-		else
-		{
-			endPathIdx = closestNode;
-			CalculatePath();
-		}
-	}
 
 
 	//UPDATE/CHECK GRID HAS CHANGED
@@ -81,54 +90,11 @@ void App_Flowfield::Render(float deltaTime) const
 {
 	UNREFERENCED_PARAMETER(deltaTime);
 
-	////Astar debug rendering
-	//if (dynamic_cast<Elite::AStar<GridTerrainNode, GraphConnection>*>(m_pCurrentAlgo)) {
-	//	//if Astar
-	//	auto Astar = dynamic_cast<Elite::AStar<GridTerrainNode, GraphConnection>*>(m_pCurrentAlgo);
-
-	//	auto openList = Astar->GetOpenList();
-	//	auto closedList = Astar->GetClosedList();
-
-
-	//	for (size_t i = 0; i < openList->size(); i++)
-	//	{
-	//		auto currentNode = (*openList)[i].pNode;
-	//		if (currentNode != nullptr && currentNode->GetTerrainType() != TerrainType::Mud)
-	//			m_GraphRenderer.RenderRectNode(m_pGridGraph->GetNodeWorldPos(currentNode->GetIndex()), "", 15.f, { 0.f,0.f,1.f, 0.2f });
-
-	//	}
-
-	//	for (size_t i = 0; i < closedList->size(); i++)
-	//	{
-	//		auto currentNode = (*closedList)[i].pNode;
-	//		if (currentNode != nullptr && currentNode->GetTerrainType() != TerrainType::Mud)
-	//			m_GraphRenderer.RenderRectNode(m_pGridGraph->GetNodeWorldPos(currentNode->GetIndex()), "", 15.f, { 0.7f,0.f,0.5f, 0.25f });
-	//	}
-
-
-	//}
-	//else if (dynamic_cast<Elite::BFS<GridTerrainNode, GraphConnection>*>(m_pCurrentAlgo)) {
-	//	//if Astar
-	//	auto BFS = dynamic_cast<Elite::BFS<GridTerrainNode, GraphConnection>*>(m_pCurrentAlgo);
-
-	//	auto openList = BFS->GetOpenList();
-	//	auto closedList = BFS->GetClosedList();
-
-	//	for (auto& currentNode : *openList)
-	//	{
-	//		if(currentNode != nullptr && currentNode->GetTerrainType() != TerrainType::Mud)
-	//		m_GraphRenderer.RenderRectNode(m_pGridGraph->GetNodeWorldPos(currentNode->GetIndex()), "", 15.f, { 0.f,0.f,1.f, 0.2f });
-	//	}
-
-
-	//	for (auto& currentNode : *closedList)
-	//	{
-	//		if(currentNode.second !=  nullptr && currentNode.second->GetTerrainType() != TerrainType::Mud)
-	//			m_GraphRenderer.RenderRectNode(m_pGridGraph->GetNodeWorldPos(currentNode.second->GetIndex()), "", 15.f, { 0.7f,0.f,0.5f, 0.25f });
-	//	}
-
-
-	//}
+	//Render Agents
+	for (size_t i = 0; i < m_AgentVector.size(); i++)
+	{
+		m_AgentVector[i]->Render(deltaTime);
+	}
 
 
 	//Render grid
@@ -139,11 +105,6 @@ void App_Flowfield::Render(float deltaTime) const
 		m_bDrawConnections,
 		m_bDrawConnectionsCosts
 	);
-	//Render start node on top if applicable
-	if (startPathIdx != invalid_node_index)
-	{
-		m_GraphRenderer.HighlightNodes(m_pGridGraph, { m_pGridGraph->GetNode(startPathIdx) }, START_NODE_COLOR);
-	}
 
 	//Render end node on top if applicable
 	if (endPathIdx != invalid_node_index)
@@ -157,27 +118,40 @@ void App_Flowfield::Render(float deltaTime) const
 		m_GraphRenderer.HighlightNodes(m_pGridGraph, m_vPath);
 	}
 
-	for (auto node : m_pGridGraph->GetAllActiveNodes())
-	{
-		Elite::Vector2 nodePos = m_pGridGraph->GetNodeWorldPos(node);
-		//DEBUGRENDERER2D->DrawDirection(nodePos, node->GetFlowVec(), 2.f, {1.f, 0.f, 0.f});
-		DEBUGRENDERER2D->DrawDirection(nodePos, node->GetFlowVec(), 5.f, { 0.8f, 0.f, 0.2f });
-		DEBUGRENDERER2D->DrawPoint((nodePos + (node->GetFlowVec() * 5.f)), 3.f, { 0.8f, 0.f, 0.2f } , 0.f);
-		//arrow drawing
-		Elite::Vector2 normalizeFlowVec = node->GetFlowVec().GetNormalized();
+	if (m_bDrawFlowVec) {
+		float arrowLenght = m_SizeCell / 3.f;
+		float arrowSidesLenght = m_SizeCell / 10.f;
 
-		
-		Elite::Vector2 leftPerpendicularPos = { normalizeFlowVec.y * 2.f, -normalizeFlowVec.x * 2.f } ;
-		leftPerpendicularPos = leftPerpendicularPos + ((nodePos + (node->GetFlowVec() * 3.5f)));
-		
-		Elite::Vector2 RightPerpendicularPos = { -normalizeFlowVec.y * 2.f, normalizeFlowVec.x * 2.f };
-		RightPerpendicularPos = RightPerpendicularPos + ((nodePos + (node->GetFlowVec() * 3.5f)));
 
-		DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec() * 5.f), leftPerpendicularPos, { 0.0f, 0.f, 1.f });
 
-		DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec() * 5.f), RightPerpendicularPos, { 0.0f, 0.f, 1.f });
+		for (auto node : m_pGridGraph->GetAllActiveNodes())
+		{
+			if (node->GetBestCost() != static_cast<float>(TerrainType::Water)) {
+				Elite::Vector2 nodePos = m_pGridGraph->GetNodeWorldPos(node);
+				//DEBUGRENDERER2D->DrawDirection(nodePos, node->GetFlowVec(), 2.f, {1.f, 0.f, 0.f});
+				DEBUGRENDERER2D->DrawDirection(nodePos, node->GetFlowVec(), arrowLenght, { 0.8f, 0.f, 0.2f });
+				DEBUGRENDERER2D->DrawPoint((nodePos + (node->GetFlowVec() * arrowLenght)), 3.f, { 0.8f, 0.f, 0.2f }, 0.f);
+				//arrow drawing
+				Elite::Vector2 normalizeFlowVec = node->GetFlowVec().GetNormalized();
 
+
+				Elite::Vector2 leftPerpendicularPos = { normalizeFlowVec.y * arrowSidesLenght, -normalizeFlowVec.x * arrowSidesLenght };
+				leftPerpendicularPos = leftPerpendicularPos + ((nodePos + ((node->GetFlowVec()) * arrowSidesLenght)));
+
+				Elite::Vector2 RightPerpendicularPos = { -normalizeFlowVec.y * arrowSidesLenght, normalizeFlowVec.x * arrowSidesLenght };
+				RightPerpendicularPos = RightPerpendicularPos + ((nodePos + ((node->GetFlowVec()) * arrowSidesLenght)));
+
+				DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec() * arrowLenght), leftPerpendicularPos, { 0.0f, 0.f, 1.f });
+
+				DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec() * arrowLenght), RightPerpendicularPos, { 0.0f, 0.f, 1.f });
+			}
+			else {
+
+			}
+
+		}
 	}
+	
 
 }
 
@@ -251,83 +225,43 @@ void App_Flowfield::UpdateImGui()
 		ImGui::Spacing();
 
 		ImGui::Text("Middle Mouse");
+		ImGui::Text("for placing end node");
+		ImGui::Spacing();
+
 		ImGui::Text("controls");
 		std::string buttonText{ "" };
-		if (m_StartSelected)
-			buttonText += "Start Node";
-		else
-			buttonText += "End Node";
 
-		if (ImGui::Button(buttonText.c_str()))
-		{
-			m_StartSelected = !m_StartSelected;
-		}
+		ImGui::Indent();
 
 		ImGui::Checkbox("Grid", &m_bDrawGrid);
 		ImGui::Checkbox("NodeNumbers", &m_bDrawNodeNumbers);
 		ImGui::Checkbox("Connections", &m_bDrawConnections);
 		ImGui::Checkbox("Connections Costs", &m_bDrawConnectionsCosts);
+		ImGui::Checkbox("FlowField vectors", &m_bDrawFlowVec);
 
-		//if(ImGui::Combo("Algorithm", &m_SelectedAlgoritm, "Astar\0BFS", 3)) {
+		ImGui::Unindent();
 
-		//	switch (m_SelectedAlgoritm)
-		//	{
-		//	case 0: //ASTAR
-		//		if (!dynamic_cast<Elite::AStar<GridTerrainNode, GraphConnection>*>(m_pCurrentAlgo)) {
-		//			delete m_pCurrentAlgo;
-		//			m_pCurrentAlgo = new Elite::AStar<Elite::GridTerrainNode, Elite::GraphConnection>(m_pGridGraph, m_pHeuristicFunction);
-		//		}
-		//		break;
-		//	case 1: //BFS
-		//		if (dynamic_cast<Elite::AStar<GridTerrainNode, GraphConnection>*>(m_pCurrentAlgo)) {
-		//			delete m_pCurrentAlgo;
-		//			m_pCurrentAlgo = new Elite::BFS<Elite::GridTerrainNode, Elite::GraphConnection>(m_pGridGraph);
-		//		}
-		//		break;
-		//	default:
-		//		break;
-		//	}
-		//}
-
-		//if (dynamic_cast<Elite::AStar<GridTerrainNode, GraphConnection>*>(m_pCurrentAlgo)) { //if astar render heuristic imgui
-		//	if (ImGui::Combo("", &m_SelectedHeuristic, "Manhattan\0Euclidean\0SqrtEuclidean\0Octile\0Chebyshev", 4))
-		//	{
-		//		switch (m_SelectedHeuristic)
-		//		{
-		//		case 0:
-		//			m_pHeuristicFunction = HeuristicFunctions::Manhattan;
-		//			break;
-		//		case 1:
-		//			m_pHeuristicFunction = HeuristicFunctions::Euclidean;
-		//			break;
-		//		case 2:
-		//			m_pHeuristicFunction = HeuristicFunctions::SqrtEuclidean;
-		//			break;
-		//		case 3:
-		//			m_pHeuristicFunction = HeuristicFunctions::Octile;
-		//			break;
-		//		case 4:
-		//			m_pHeuristicFunction = HeuristicFunctions::Chebyshev;
-		//			break;
-		//		default:
-		//			m_pHeuristicFunction = HeuristicFunctions::Chebyshev;
-		//			break;
-		//		}
-
-		//		//if Astar
-		//		//auto Astar = dynamic_cast<Elite::AStar<GridTerrainNode, GraphConnection>*>(m_pCurrentAlgo);
-		//		//Astar->SetHeuristic(m_pHeuristicFunction);
-
-
-		//	}
-		//}
+		
 		ImGui::Spacing();
 		ImGui::Text("COLLUM: ");
 		ImGui::Indent();
-		if (ImGui::SliderInt("COlls:", &COLUMNS,  0, 1000 ))
+		if (ImGui::SliderInt("COlls:", &COLUMNS, 10, 1000)) {
 			MakeGridGraph();
-		if (ImGui::SliderInt("ROWS:", &ROWS,  0, 1000 ))
+			m_pIntergrationfield->UpdateGraph(m_pGridGraph);
+			CalculatePath();
+
+		}
+		if (ImGui::SliderInt("ROWS:", &ROWS, 10, 1000)) {
 			MakeGridGraph();
+			m_pIntergrationfield->UpdateGraph(m_pGridGraph);
+			CalculatePath();
+
+		}
+		if (ImGui::SliderInt("CellSize:", reinterpret_cast<int*>(&m_SizeCell), 3, 50)) {
+			MakeGridGraph();
+			m_pIntergrationfield->UpdateGraph(m_pGridGraph);
+			CalculatePath();
+		}
 
 		ImGui::Unindent();
 		//End
@@ -344,18 +278,23 @@ void App_Flowfield::UpdateImGui()
 #endif
 }
 
+int App_Flowfield::PositionToIndex(const Elite::Vector2 pos)
+{
+	int x = (pos.x / ((COLUMNS * m_SizeCell) / COLUMNS));
+	int y = int(pos.y / ((ROWS * m_SizeCell) / ROWS)) * ROWS;
+
+	if (x + y <= (m_pGridGraph->GetNrOfActiveNodes())) return x + y;
+	return 0;
+}
 void App_Flowfield::CalculatePath()
 {
 	//Check if valid start and end node exist
-	if (startPathIdx != invalid_node_index
-		&& endPathIdx != invalid_node_index
-		&& startPathIdx != endPathIdx)
+	if (endPathIdx != invalid_node_index)
 	{
-		//BFS Pathfinding
-		auto startNode = m_pGridGraph->GetNode(startPathIdx);
-		auto endNode = m_pGridGraph->GetNode(endPathIdx);
 
 		//m_vPath = m_pCurrentAlgo->FindPath(startNode, endNode);
+
+		Elite::GridTerrainNode* endNode = m_pGridGraph->GetNode(endPathIdx);
 
 		m_pIntergrationfield->CalculateIntegrationField(endNode);
 
@@ -395,12 +334,10 @@ void App_Flowfield::CalculatePath()
 
 
 
-		std::cout << "New Path Calculated node count: " << m_vPath.size() <<  std::endl;
 	}
 	else
 	{
-		std::cout << "No valid start and end node..." << std::endl;
-		m_vPath.clear();
+		std::cout << "No valid end node..." << std::endl;
 	}
 }
 

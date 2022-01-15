@@ -166,9 +166,16 @@ void App_Flowfield::Render(float deltaTime) const
 		//arrow drawing
 		Elite::Vector2 normalizeFlowVec = node->GetFlowVec().GetNormalized();
 
-		Elite::Vector2 leftPerpendicularPos = { normalizeFlowVec.x - static_cast<float>(std::cos(M_PI / 2)),  static_cast<float>(normalizeFlowVec.y - std::sin(M_PI / 2)) };
-		DEBUGRENDERER2D->DrawPoint((nodePos + (leftPerpendicularPos * 5.f)), 3.f, { 0.f, 1.f, 0.2f }, 0.f);
+		
+		Elite::Vector2 leftPerpendicularPos = { normalizeFlowVec.y * 2.f, -normalizeFlowVec.x * 2.f } ;
+		leftPerpendicularPos = leftPerpendicularPos + ((nodePos + (node->GetFlowVec() * 3.5f)));
+		
+		Elite::Vector2 RightPerpendicularPos = { -normalizeFlowVec.y * 2.f, normalizeFlowVec.x * 2.f };
+		RightPerpendicularPos = RightPerpendicularPos + ((nodePos + (node->GetFlowVec() * 3.5f)));
 
+		DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec() * 5.f), leftPerpendicularPos, { 0.0f, 0.f, 1.f });
+
+		DEBUGRENDERER2D->DrawSegment(nodePos + (node->GetFlowVec() * 5.f), RightPerpendicularPos, { 0.0f, 0.f, 1.f });
 
 	}
 

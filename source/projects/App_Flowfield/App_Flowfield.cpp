@@ -14,7 +14,7 @@ int App_Flowfield::m_sColls = 30;
 
 int App_Flowfield::m_sRows = 30;
 
-int App_Flowfield::m_sAgentAmount = 200;
+int App_Flowfield::m_sAgentAmount = 250;
 
 
 
@@ -40,6 +40,7 @@ App_Flowfield::~App_Flowfield()
 void App_Flowfield::Start()
 {
 	std::cout << "Flowfield rendering depends on team selection check edit menu\n";
+	std::cout << "Can crash whe adding more agents at runtime";
 
 	//Set Camera
 	DEBUGRENDERER2D->GetActiveCamera()->SetZoom(39.0f);
@@ -92,24 +93,26 @@ void App_Flowfield::Start()
 void App_Flowfield::Update(float deltaTime)
 {
 
-	g_lock.lock();
-	//Get linear from flowfield
-	int teamIdx = -1;
-	for (int i = 0; i < m_sAgentAmount; i++)
-	{
-		if (i == ((m_sAgentAmount / TEAMCOUNT) * (teamIdx + 1))) {
-			teamIdx++;
-		}
+	if (g_lock.try_lock()) {
+		int teamIdx = -1;
+		for (int i = 0; i < m_sAgentAmount; i++)
+		{
+			if (i == ((m_sAgentAmount / TEAMCOUNT) * (teamIdx + 1))) {
+				teamIdx++;
+			}
 
-		teamIdx = Elite::Clamp(teamIdx, 0, TEAMCOUNT - 1);
-		SteeringAgent* pagent = m_AgentVector[i];
-		Elite::Vector2 currentFlowVec = m_pGridGraph->GetNode(PositionToIndex(pagent->GetPosition()))->GetFlowVec(teamIdx);
-		pagent->TrimToWorld({ 0,0 }, { static_cast<float>(m_sColls * m_SizeCell), static_cast<float>(m_sRows * m_SizeCell) });
-		pagent->SetLinearVelocity(currentFlowVec * pagent->GetMaxLinearSpeed());
-		pagent->Update(deltaTime);
-		pagent->SetMaxLinearSpeed(m_ImguiMaxLinearSpeed);
+			teamIdx = Elite::Clamp(teamIdx, 0, TEAMCOUNT - 1);
+			SteeringAgent* pagent = m_AgentVector[i];
+			Elite::Vector2 currentFlowVec = m_pGridGraph->GetNode(PositionToIndex(pagent->GetPosition()))->GetFlowVec(teamIdx);
+			pagent->TrimToWorld({ 0,0 }, { static_cast<float>(m_sColls * m_SizeCell), static_cast<float>(m_sRows * m_SizeCell) });
+			pagent->SetLinearVelocity(currentFlowVec * pagent->GetMaxLinearSpeed());
+			pagent->Update(deltaTime);
+			pagent->SetMaxLinearSpeed(m_ImguiMaxLinearSpeed);
+		}
+		g_lock.unlock();
+
 	}
-	g_lock.unlock();
+	//Get linear from flowfield
 
 	
 

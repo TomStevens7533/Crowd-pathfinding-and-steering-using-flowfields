@@ -14,7 +14,7 @@ Every node in this grid has a terrain cost. For example: water has a cost of 200
 Flowfields can be used in various different  scenarios!
  
  -strategy games: can be used to control different armies to play smarter.                                                                                                 
- -city building games: can be used to direct the crowd going from one place to to next.
+ -city building games: can be used to direct the crowd going from one place to to the next.
   
   flowfields can almost always be usefull when controlling allot of agents! 
   

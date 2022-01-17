@@ -88,7 +88,7 @@ void InegrationField<T_NodeType, T_ConnectionType>::CalculateIntegrationField(T_
 			T_NodeType* neighbourNode = m_pGraph->GetNode(connnection->GetTo());
 			//Calculate new Node Cost based upon the curent node and the connection cost of going to the nextnode;
 			int CalculatedCost = static_cast<int>(m_pGraph->GetNode(connnection->GetTo())->GetTerrainType()); //GetCostOfTerrainType
-			CalculatedCost += (m_pGraph->GetConnection(connnection->GetFrom(), connnection->GetTo())->GetCost() * currentLookUpNode->GetBestCost(m_IntergrationFieldID));
+			CalculatedCost += static_cast<int>((m_pGraph->GetConnection(connnection->GetFrom(), connnection->GetTo())->GetCost() * currentLookUpNode->GetBestCost(m_IntergrationFieldID)));
 
 			//if shorter cost has been found add to the open list
 			if (CalculatedCost < neighbourNode->GetBestCost(m_IntergrationFieldID)) {

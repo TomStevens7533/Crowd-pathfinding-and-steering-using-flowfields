@@ -87,7 +87,7 @@ namespace Elite
 	protected:
 		TerrainType m_Terrain;
 		Elite::Vector2 m_FlowVec[TEAMCOUNT];
-		float m_BestCost[TEAMCOUNT];
+		float m_BestCost[TEAMCOUNT]{0};
 	};
 
 

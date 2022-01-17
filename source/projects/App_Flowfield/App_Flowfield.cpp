@@ -58,7 +58,7 @@ void App_Flowfield::Start()
 
 	//Setup default start path
 
-	for (size_t i = 0; i < (TEAMCOUNT + 1); i++)
+	for (size_t i = 0; i < (TEAMCOUNT); i++)
 		m_endPathVec[i] = (rand() % (m_sColls * m_sRows)) + 1;
 
 
@@ -326,7 +326,7 @@ void App_Flowfield::UpdateImGui()
 
 int App_Flowfield::PositionToIndex(const Elite::Vector2 pos)
 {
-	int x = (pos.x / ((m_sColls * m_SizeCell) / m_sColls));
+	int x = int(pos.x / ((m_sColls * m_SizeCell) / m_sColls));
 	int y = int(pos.y / ((m_sRows * m_SizeCell) / m_sRows)) * m_sRows;
 
 	return Elite::Clamp(x + y, 0, (m_pGridGraph->GetNrOfActiveNodes() - 1));

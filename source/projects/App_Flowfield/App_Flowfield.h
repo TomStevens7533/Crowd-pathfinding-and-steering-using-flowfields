@@ -69,7 +69,7 @@ private:
 	int m_SelectedHeuristic = 4;
 	int m_SelectedAlgoritm = 0;
 	int m_ImguiTeamToEditNode = 0;
-	int m_ImguiMaxLinearSpeed = 5.f;
+	float m_ImguiMaxLinearSpeed = 5.f;
 
 	//mutex to lock agentVector if changes is happening;
 	std::mutex g_lock;

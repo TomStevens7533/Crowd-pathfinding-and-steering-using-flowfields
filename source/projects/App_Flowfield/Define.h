@@ -1,2 +1,2 @@
 #pragma once
-#define TEAMCOUNT 20
+#define TEAMCOUNT 15

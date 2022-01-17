@@ -40,7 +40,7 @@ App_Flowfield::~App_Flowfield()
 void App_Flowfield::Start()
 {
 	std::cout << "Flowfield rendering depends on team selection check edit menu\n";
-	std::cout << "Can crash whe adding more agents at runtime";
+	std::cout << "Can crash when adding more agents at runtime due to multithreading\n";
 
 	//Set Camera
 	DEBUGRENDERER2D->GetActiveCamera()->SetZoom(39.0f);

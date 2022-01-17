@@ -14,8 +14,9 @@ Every node in this grid has a cost to it, water for example has a cost of 200001
 <h2>Examples on usecases of the flowfield technique</h2>
  
  flowfield can be used in al different kind of scenarios!
-  -strategy games: can be used to control different armies to play smart.
-  -city building games: can be used to control the crowd going from one place to to next.
+ 
+ -strategy games: can be used to control different armies to play smart.                                                                                                 
+ -city building games: can be used to control the crowd going from one place to to next.
   
   flowfield can almost always be usefull when controlling allot of agents! 
   
